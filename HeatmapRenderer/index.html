@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <title>Dynamic Layer</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.13/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://js.arcgis.com/3.13/esri/css/esri.css">
+        <style>
+            html, body, #mapDiv, .map.container {
+                padding:0;
+                margin:0;
+                height:100%;
+            }
+        </style>
+        <script src="http://js.arcgis.com/3.13/"></script>
+        <script>
+            var global;
+            var addLayer;
+            var clear;
+            var featureLayer;
+            require([
+                "esri/map", "esri/layers/FeatureLayer", "esri/InfoTemplate",
+                "esri/tasks/GeometryService",
+                "esri/layers/QueryDataSource", "esri/layers/LayerDataSource",
+                "esri/symbols/SimpleFillSymbol", "esri/symbols/SimpleMarkerSymbol", "esri/renderers/SimpleRenderer",
+                "esri/config","esri/SpatialReference", "esri/symbols/SimpleLineSymbol", "esri/Color", "esri/renderers/HeatmapRenderer",
+                "esri/Color", "dojo/domReady!"
+            ], function(
+                    Map, FeatureLayer, InfoTemplate,
+                    GeometryService,
+                    QueryDataSource, LayerDataSource,
+                    SimpleFillSymbol,SimpleMarkerSymbol, SimpleRenderer,
+                    esriConfig, SpatialReference,SimpleLineSymbol, Color,HeatmapRenderer,
+                    Color)
+                 {
+                    map = new Map("mapDiv", {
+                    basemap: "satellite",
+                    center: [0,0],
+                    zoom: 3
+                 });
+                
+                   
+    //               var renderer = new SimpleRenderer(
+    //                       new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE, 10,
+    //                               new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+    //                                       new Color([255,0,0]), 1)));
+    
+      document.getElementById("Clear").onclick = function() {
+          map.removeLayer(featureLayer);
+          
+          
+      }
+          
+     addLayer = function() {
+         
+         var datasource = new QueryDataSource();
+                   datasource.workspaceId = "BiodWebbd";
+                   datasource.geometryType = "point";
+                   datasource.oidFields = ["OBJECTID"];
+                   datasource.query = "SELECT OBJECTID, Shape, MAX_POP300 from bioDWEB.BD.NATEARTH_10M_POPULATED_PLACES WHERE MAX_POP300 > 0";
+                   datasource.spatialReference = new SpatialReference({ wkid: 102100 });
+                   var layersource = new LayerDataSource();
+                   layersource.dataSource = datasource;
+    
+                   var featureLayer = new FeatureLayer("http://bdmapbeta.arts.ryerson.ca/arcgis/rest/services/BiodWebDyn/BioD_DynamicMap/MapServer/dynamicLayer",
+                           {
+                               mode: FeatureLayer.MODE_SNAPSHOT,
+                               outFields: ["*"],
+                               source: layersource
+                           });
+                var renderer = new HeatmapRenderer({
+                    colors: ["rgba(0, 0, 255, 0)","rgb(0, 0, 255)","rgb(255, 0, 255)", "rgb(255, 0, 0)"],
+//                    colorStops: [
+//                        { ratio: 0, color: "rgba(250, 0, 0, 0)" },
+//                        { ratio: 0.6, color: "rgb(250, 0, 0)" },
+//                        { ratio: 0.85, color: "rgb(250, 150, 0)"},
+//                        { ratio: 0.95, color: "rgb(255, 255, 0)"}],
+    
+                    blurRadius: document.getElementById("blurRadius").value,
+                    maxPixelIntensity: document.getElementById("maxIntensity").value,
+                    minPixelIntensity: document.getElementById("minIntensity").value,
+                    //field: "MAX_POP300"
+                });
+    
+    
+                    map.removeLayer(featureLayer);
+                     featureLayer.setRenderer(renderer);
+                     map.addLayer(featureLayer);
+                     };
+             })();
+                 
+                 
+        </script>
+        
+        <body>
+            
+            Blur Radius<input id="blurRadius" type="text"></input><br/>
+            Min Pixel Intensity Radius<input id="minIntensity" type="text"></input><Br/>
+            Max Pixel Intensity Radius<input id="maxIntensity" type="text"></input><Br/>
+            <button id="Execute" onclick="addLayer()">Execute</button>
+            <button id="Clear">Clear</button>
+            <div id="mapDiv" style="width:100%;height:100%"></div>
+        </body>
+
+</html>
