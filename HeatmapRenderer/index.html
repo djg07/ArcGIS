@@ -49,24 +49,30 @@
     
       document.getElementById("Clear").onclick = function() {
           map.removeLayer(featureLayer);
-          
+          try {
+             map.removeLayer(featureLayer);
+         } catch(e) {
+             
+         }
           
       }
           
      addLayer = function() {
          
+         
          var datasource = new QueryDataSource();
                    datasource.workspaceId = "BiodWebbd";
-                   datasource.geometryType = "point";
+                   datasource.geometryType = "points";
                    datasource.oidFields = ["OBJECTID"];
-                   datasource.query = "SELECT OBJECTID, Shape, MAX_POP300 from bioDWEB.BD.NATEARTH_10M_POPULATED_PLACES WHERE MAX_POP300 > 0";
+                   //datasource.query = "SELECT OBJECTID, Shape, MAX_POP300 from bioDWEB.BD.NATEARTH_10M_POPULATED_PLACES WHERE MAX_POP300 > 0";
+                   datasource.query = "Select FC.OBJECTID, FC.Shape, TB.Population POP from bd.US_CENSUSTRACT_G0050_Points FC inner join(SELECT ctid ID,sum (population) Population FROM bd.tbl_AgeByGender where AgeGroupID in (11)  and CategoryID in (1,0)  group by ctid) TB on FC.ctid = TB.ID WHERE TB.Population > 1608"
                    datasource.spatialReference = new SpatialReference({ wkid: 102100 });
                    var layersource = new LayerDataSource();
                    layersource.dataSource = datasource;
     
-                   var featureLayer = new FeatureLayer("http://bdmapbeta.arts.ryerson.ca/arcgis/rest/services/BiodWebDyn/BioD_DynamicMap/MapServer/dynamicLayer",
+                    featureLayer = new FeatureLayer("http://map1dev.ad.bluedot.global:6080/arcgis/rest//services/BiodWebDyn/BioD_DynamicMap/MapServer/dynamicLayer",
                            {
-                               mode: FeatureLayer.MODE_SNAPSHOT,
+                               mode: FeatureLayer.MODE_ONDEMAND,
                                outFields: ["*"],
                                source: layersource
                            });
@@ -81,11 +87,11 @@
                     blurRadius: document.getElementById("blurRadius").value,
                     maxPixelIntensity: document.getElementById("maxIntensity").value,
                     minPixelIntensity: document.getElementById("minIntensity").value,
-                    //field: "MAX_POP300"
+                    field: "POP"
                 });
     
-    
-                    map.removeLayer(featureLayer);
+                        
+                    
                      featureLayer.setRenderer(renderer);
                      map.addLayer(featureLayer);
                      };
