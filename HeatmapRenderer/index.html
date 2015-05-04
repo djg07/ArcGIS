@@ -65,19 +65,20 @@
                    datasource.geometryType = "points";
                    datasource.oidFields = ["OBJECTID"];
                    //datasource.query = "SELECT OBJECTID, Shape, MAX_POP300 from bioDWEB.BD.NATEARTH_10M_POPULATED_PLACES WHERE MAX_POP300 > 0";
-                   datasource.query = "Select FC.OBJECTID, FC.Shape, TB.Population POP from bd.US_CENSUSTRACT_G0050_Points FC inner join(SELECT ctid ID,sum (population) Population FROM bd.tbl_AgeByGender where AgeGroupID in (11)  and CategoryID in (1,0)  group by ctid) TB on FC.ctid = TB.ID WHERE TB.Population > 1608"
+                   datasource.query = "Select TOP 200 FC.OBJECTID, FC.Shape, TB.Population POP from bd.US_CENSUSTRACT_G0050_Points FC inner join(SELECT ctid ID,sum (population) Population FROM bd.tbl_AgeByGender where AgeGroupID in (11)  and CategoryID in (1,0)  group by ctid) TB on FC.ctid = TB.ID ORDER BY POP DESC"
+                   //datasource.query = "SELECT OBJECTID, SHAPE, Population POP FROM bd.pointtest";
                    datasource.spatialReference = new SpatialReference({ wkid: 102100 });
                    var layersource = new LayerDataSource();
                    layersource.dataSource = datasource;
     
                     featureLayer = new FeatureLayer("http://map1dev.ad.bluedot.global:6080/arcgis/rest//services/BiodWebDyn/BioD_DynamicMap/MapServer/dynamicLayer",
                            {
-                               mode: FeatureLayer.MODE_ONDEMAND,
+                               mode: FeatureLayer.MODE_SNAPSHOT,
                                outFields: ["*"],
                                source: layersource
                            });
                 var renderer = new HeatmapRenderer({
-                    colors: ["rgba(0, 0, 255, 0)","rgb(0, 0, 255)","rgb(255, 0, 255)", "rgb(255, 0, 0)"],
+                    //colors: ["rgba(0, 0, 255, 0)","rgb(0, 0, 255)","rgb(255, 0, 255)", "rgb(255, 0, 0)"],
 //                    colorStops: [
 //                        { ratio: 0, color: "rgba(250, 0, 0, 0)" },
 //                        { ratio: 0.6, color: "rgb(250, 0, 0)" },
