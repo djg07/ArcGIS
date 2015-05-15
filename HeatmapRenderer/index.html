@@ -20,6 +20,7 @@
             var addLayer;
             var clear;
             var featureLayer;
+
             require([
                 "esri/map", "esri/layers/FeatureLayer", "esri/InfoTemplate",
                 "esri/tasks/GeometryService",
@@ -48,7 +49,8 @@
     //                                       new Color([255,0,0]), 1)));
     
 
-          
+
+
 
          var blurCtrl = document.getElementById("blurControl");
          var maxCtrl = document.getElementById("maxControl");
@@ -75,30 +77,73 @@
                                outFields: ["*"],
                                source: layersource
                            });
-                var renderer = new HeatmapRenderer({
+                renderer = new HeatmapRenderer({
                     //colors: ["rgba(0, 0, 255, 0)","rgb(0, 0, 255)","rgb(255, 0, 255)", "rgb(255, 0, 0)"],
                     colorStops: [
 //                        { ratio: 0, color: "rgba(236,246,225, 0)" }, //OPTION 1
 //                        { ratio: 0.50, color: "rgb(234,223,96)" },
 //                        { ratio:.99, color: "rgb(215,53,53)"}],
-                        { ratio:0, color: "rgba(249,223,35,0)"}, //OPTION 2
-                            { ratio:.99, color: "rgb(121,17,124)"}],
+//                        { ratio:0, color: "rgba(249,223,35,.5)"}, //OPTION 2
+//                        { ratio:1, color: "rgba(121,17,124,1)"}],
 //                        { ratio:0, color: "rgba(176,206,255,0)"}, //OPTION 3
 //                        { ratio:.99, color: "rgb(0,73,255)"}],
 //                        { ratio: 0, color: "rgba(249,223,35, 0)" }, //OPTION 4
 //                        { ratio: 0.50, color: "rgb(121,183,81)" },
-//                        { ratio:.99, color: "rgb(55,48,142)"}],
+//                        { ratio:.99, color: "rgb(55,48,142)"}]
+                        {ratio: 0, color: "rgba(255,0,0,0)"},
+                        {ratio: 1, color: "rgb(100,0,0)"}],
 
                     blurRadius: blurCtrl.value,
                     maxPixelIntensity: maxCtrl.value,
                     minPixelIntensity: minCtrl.value,
                     field: "POP"
                 });
-    
-                        
-                    
+
+
                  featureLayer.setRenderer(renderer);
                  map.addLayer(featureLayer);
+
+                 calcBlurRadius = function() {
+                     return ((map.width) / map.extent.getWidth()) * (25500)
+
+
+                 }
+
+                 calcMaxIntensity = function() {
+                    return (calcBlurRadius() * 7555)
+                    //return 8000
+                 }
+
+                 calcMinIntensity = function() {
+                     return 0
+                 }
+
+                 map.on("extent-change", function() {
+                     //alert('extent change')
+                     radius = calcBlurRadius();
+                     maxPixelIntensity = calcMaxIntensity();
+                     minPixelIntensity = calcMinIntensity();
+                     console.log("Blur Radius: " + radius);
+                     console.log("Max Pixel Intensity: "  + maxPixelIntensity);
+                     console.log("Min Pixel Intensity: " + minPixelIntensity);
+                     renderer.blurRadius = radius;
+                     renderer.maxPixelIntensity = maxPixelIntensity;
+                     renderer.minPixelIntensity = minPixelIntensity;
+
+                     var ratio = (calcBlurRadius() / 175);
+                       //var ratio = map.getLevel() * .071;
+
+                     if (ratio > 1) {
+                         ratio = 1
+                     }
+
+                     console.log(ratio)
+
+                     renderer.setColorStops([{ratio: 0, color: "rgba(255,0,0,0)"},
+                             {ratio:ratio, color: "rgb(100,0,0)"}]);
+
+                     featureLayer.redraw();
+                 })
 
                      var sliders = document.querySelectorAll(".blurInfo p~input[type=range]");
                      var addLiveValue = function (ctrl){
@@ -206,13 +251,13 @@
                     <input id="valueControl" type="checkbox" checked>
                 </p>
                 <p>Blur Radius : <span id="blurValue">10</span></p>
-                <input id="blurControl" type="range" max=30 min=0 value=10 step=1/>
+                <input id="blurControl" type="range" max=10000 min=0 value=10 step=1/>
 
                 <p>Max Value : <span id="maxValue">8000</span></p>
                 <input id="maxControl" type="range" max=8000 min=0 value=8000 step=1/>
 
                 <p>Min Value : <span id="minValue">0</span></p>
-                <input id="minControl" type="range" max=500 min=0 value=0 step=1/>
+                <input id="minControl" type="range" max=8000 min=0 value=0 step=1/>
 
 
             </div>
