@@ -130,16 +130,18 @@
                      renderer.maxPixelIntensity = maxPixelIntensity;
                      renderer.minPixelIntensity = minPixelIntensity;
 
-                     var ratio = (calcBlurRadius() / 175);
+                     var ratio = (calcBlurRadius()/100); //was at 175
                        //var ratio = map.getLevel() * .071;
 
                      if (ratio > 1) {
                          ratio = 1
                      }
 
+                     //if
+
                      console.log(ratio)
 
-                     renderer.setColorStops([{ratio: 0, color: "rgba(255,0,0,0)"},
+                     renderer.setColorStops([{ratio:0, color: "rgba(143, 86, 82, 0)"},
                              {ratio:ratio, color: "rgb(100,0,0)"}]);
 
                      featureLayer.redraw();
