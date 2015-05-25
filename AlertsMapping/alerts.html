@@ -37,7 +37,8 @@
             "esri/symbols/SimpleLineSymbol",
             "esri/layers/LabelClass",
             "esri/symbols/TextSymbol",
-            "esri/symbols/Font", "esri/Color", "esri/layers/ImageParameters",
+            "esri/symbols/Font", "esri/Color", "esri/layers/ImageParameters", "esri/InfoTemplate",
+            "esri/tasks/QueryTask", "esri/tasks/query", "esri/tasks/IdentifyTask", "esri/tasks/IdentifyParameters", "esri/dijit/Popup",
             "esri/SpatialReference",
             "dojo/dom",
             "dojo/dom-construct",
@@ -53,7 +54,7 @@
                 Map, FeatureLayer, ArcGISDynamicMapServiceLayer, ArcGISTiledMapServiceLayer,
                 DynamicLayerInfo, QueryDataSource, TableDataSource, LayerDataSource, LayerDrawingOptions,
                 ClassBreaksRenderer, SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, LabelClass, TextSymbol, Font, Color,
-                ImageParameters,
+                ImageParameters, InfoTemplate, QueryTask, Query, IdentifyTask, IdentifyParameters, Popup,
                 SpatialReference, dom, domConstruct,
                 domStyle, parser, query, arrayUtils, Color, Source, registry) //requires
         {
@@ -118,14 +119,29 @@
                 var imageParameters = new ImageParameters();
                 imageParameters.format = "png16";
 
+
+
                 var usaLayer = new ArcGISDynamicMapServiceLayer("http://map1dev.ad.bluedot.global:6080/arcgis/rest/services/BiodWebDyn/BioD_DynamicMap/MapServer", //took out /UserDynamicLayer/
                         {
                             "imageParameters": imageParameters,
+
                             "id": "NEW LAYER"
+
 
 
                         }
                 );
+
+                //QueryTask for Label Start
+
+                queryTask = new esri.tasks.QueryTask("http://map1dev.ad.bluedot.global:6080/arcgis/rest/services/BiodWebDyn/BioD_DynamicMap/MapServer");
+                query = new esri.tasks.Query();
+                query.returnGeometry = true;
+                query.outFields = ["OBJECTID"];
+
+                //QueryTask for Label End
+
+
                 usaLayer.setVisibleLayers([0]);
                 usaLayer.setDPI(500);
                 if (!dynamicLayerInfos) {
@@ -145,7 +161,7 @@
                     symbol: new TextSymbol({
                         font: new Font("1", Font.STYLE_NORMAL, Font.VARIANT_NORMAL, Font.WEIGHT_NORMAL, "Helvetica"),
                         color: new Color("#FFFFFF")
-                    }),
+                    })
                     //where: "POP>100"
                 });
 
@@ -161,6 +177,50 @@
                 options[0] = drawingOptions;
                 usaLayer.setLayerDrawingOptions(options);
 
+
+                //Identify Parameter Testing Start
+                var mapServiceURL = "http://map1dev.ad.bluedot.global:6080/arcgis/rest/services/BiodWebDyn/BioD_DynamicMap/MapServer";
+                identifyParams = new IdentifyParameters();
+                identifyParams.tolerance = 3;
+                identifyParams.returnGeometry = true;
+                identifyParams.layerIds = [0, 2];
+                identifyParams.layerOption = IdentifyParameters.LAYER_OPTION_ALL;
+                identifyParams.width = map.width;
+                identifyParams.height = map.height;
+                identifyTask = new IdentifyTask(mapServiceURL);
+
+                map.on("click", executeIdentifyTask);
+
+                function executeIdentifyTask(event) {
+                    identifyParams.geometry = event.mapPoint;
+                    identifyParams.mapExtent = map.extent;
+
+                    var deferred = identifyTask
+                            .execute(identifyParams)
+                            .addCallback(function (response) {
+                                // response is an array of identify result objects
+                                // Let's return an array of features.
+                                return arrayUtils.map(response, function (result) {
+                                    var feature = result.feature;
+                                    var layerName = result.layerName;
+                                    console.log(result);
+
+                                    feature.attributes.layerName = layerName;
+
+                                    var taxParcelTemplate = new InfoTemplate("", "${cityName}<br>${cityCode}");
+//                                            "${Postal Address} <br/> Owner of record: ${First Owner Name}");
+                                    feature.setInfoTemplate(taxParcelTemplate);
+
+
+                                    return feature;
+                                });
+
+                            })
+                    map.infoWindow.setFeatures([deferred]);
+                    map.infoWindow.show(event.mapPoint);
+                }
+
+                //Identify Parameter Testing End
 
                 map.addLayer(usaLayer);
 
