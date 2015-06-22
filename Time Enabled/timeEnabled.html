@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>BIOMOSAIC</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.13/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.13/esri/css/esri.css">
+    <style>
+        html, body, #mapDiv, .map.container {
+            padding:0;
+            margin:0;
+            height:100%;
+        }
+
+        #bottomPanel {
+            left: 50%;
+            margin: 0 auto;
+            margin-left: -500px;
+            position: absolute;
+            bottom: 2.5em;
+        }
+
+        #timeInfo{
+            border-radius: 4px;
+            border: solid 2px #ccc;
+            background-color: #fff;
+            display: block;
+            padding: 5px;
+            position: relative;
+            text-align: center;
+            width: 1000px;
+            z-index: 99;
+        }
+
+    </style>
+    <script src="http://js.arcgis.com/3.13/"></script>
+    <script>
+        var global;
+        var addLayer;
+        var clear;
+        var featureLayer;
+        require([
+            "esri/map", "esri/layers/FeatureLayer", "esri/InfoTemplate",
+            "esri/tasks/GeometryService",
+            "esri/layers/QueryDataSource", "esri/layers/LayerDataSource",
+            "esri/symbols/SimpleFillSymbol", "esri/symbols/SimpleMarkerSymbol", "esri/renderers/SimpleRenderer",
+            "esri/config","esri/SpatialReference", "esri/symbols/SimpleLineSymbol", "esri/Color", "esri/renderers/HeatmapRenderer",
+            "esri/TimeExtent", "esri/dijit/TimeSlider", "dojo/dom", "dojo/_base/array",
+            "esri/Color", "esri/layers/TableDataSource", "esri/layers/TimeInfo", "esri/layers/LayerTimeOptions",
+            "esri/TimeExtent", "esri/layers/ArcGISDynamicMapServiceLayer",
+
+            "dojo/domReady!"
+        ], function(
+                Map, FeatureLayer, InfoTemplate,
+                GeometryService,
+                QueryDataSource, LayerDataSource,
+                SimpleFillSymbol,SimpleMarkerSymbol, SimpleRenderer,
+                esriConfig, SpatialReference,SimpleLineSymbol, Color,HeatmapRenderer, TimeExtent, TimeSlider, dom, arrayUtils,
+                Color, TableDataSource, TimeInfo, LayerTimeOptions,TimeExtent, ArcGISDynamicMapServiceLayer ) {
+            map = new Map("map", {
+                basemap: "gray",
+                center: [0, 0],
+                zoom: 3
+            });
+
+            var simpleJson = {
+                "type": "simple",
+                "label": "",
+                "description": "",
+                "symbol": {
+                    "color": [255, 0, 0, 100],
+                    "size": 25,
+                    "angle": 0,
+                    "xoffset": 0,
+                    "yoffset": 0,
+                    "type": "esriSMS",
+                    "style": "esriSMSCircle",
+                    "outline": {
+                        "color": [0, 0, 0, 200],
+                        "width": .2,
+                        "type": "esriSLS",
+                        "style": "esriSLSDot"
+                    }
+                }
+            }
+
+            var datasource = new QueryDataSource();
+            datasource.workspaceId = "BiodWebbd";
+            datasource.geometryType = "points";
+            datasource.oidFields = ["FIPS"];
+            datasource.spatialReference = new SpatialReference({ wkid: 102100 });
+            //datasource.query = "Select TOP 5000 FC.OBJECTID, FC.Shape, TB.Population POP from bd.US_COUNTY_G0200_Points FC inner join (SELECT VW.county_FIPS FIPS, Sum(S.Population) Population from (select ctid, sum(Population) Population from bd.tbl_FBCensusTract where countryId in (121)  group by ctid) S inner join bd.US_CENSUSTRACT_G0050_Points VW on s.ctId = VW.ctId group by VW.county_FIPS) TB on FC.FIPS = TB.FIPS ORDER BY POP DESC";
+            datasource.query = "Select bd.TimeEnabledTest_DummyData.OBJECTID, bd.TimeEnabledTest_DummyData.FIPS, bd.TimeEnabledTest_DummyData.Description, bd.TimeEnabledTest_DummyData.Time as TimeAsDate, bd.US_COUNTY_G0200_POINTS.Shape from bd.TimeEnabledTest_DummyData INNER JOIN bd.US_COUNTY_G0200_POINTS on bd.TimeEnabledTest_DummyData.FIPS=bd.US_COUNTY_G0200_POINTS.FIPS"
+
+
+            var layersource = new LayerDataSource();
+            layersource.dataSource = datasource;
+
+            var layerTimeOptions = new LayerTimeOptions();
+            layerTimeOptions.useTime = true;
+            layerTimeOptions.timeDataCumulative = false;
+
+            var layerTimeExtent = new TimeExtent();
+            layerTimeExtent.startTime = new Date("2001/01/01 00:00:00 UTC");
+            layerTimeExtent.endTime = new Date("2001/06/01 00:00:00 UTC");
+
+            var timesource = new TimeInfo({
+                exportOptions: layerTimeOptions,
+                startTimeField: "TimeAsDate",
+
+                timeInterval: 1,
+                timeIntervalUnits: "UNIT_MONTHS",
+                timeExtent: layerTimeExtent
+
+            });
+            timesource.exportOptions = layerTimeOptions;
+
+            console.log(timesource);
+
+
+            featureLayer = new ArcGISDynamicMapServiceLayer("http://map1dev.ad.bluedot.global:6080/arcgis/rest//services/BiodGeoprocessingTest/TimeEnabledTest/MapServer",
+                    {
+                        mode: FeatureLayer.MODE_SNAPSHOT,
+                        outFields: ["*"],
+                       // timeInfo: timesource,
+                        source: layersource
+                    });
+//
+            featureLayer.timeInfo = timesource;
+            var renderer = new SimpleRenderer(simpleJson);
+            //featureLayer.setRenderer(renderer);
+            map.addLayer(featureLayer);
+
+
+
+    var timeSlider = new TimeSlider({
+        style: "width: 100%;"
+    }, dom.byId("timeSliderDiv"));
+    map.setTimeSlider(timeSlider);
+
+
+    var timeExtent = new TimeExtent();
+    timeExtent.startTime = new Date("2001/01/01 00:00:00 UTC");
+    timeExtent.endTime = new Date("2001/07/01 00:00:00 UTC");
+    timeSlider.setThumbCount(2);
+    timeSlider.createTimeStopsByTimeInterval(timeExtent, 2, "esriTimeUnitsDays");
+    timeSlider.setThumbIndexes([0, 1]);
+    timeSlider.setThumbMovingRate(2000);
+    timeSlider.startup();
+
+    //add labels for every other time stop
+    var labels = arrayUtils.map(timeSlider.timeStops, function (timeStop, i) {
+        if (i % 2 === 0) {
+            return 1
+        } else {
+            return "";
+        }
+    });
+
+    timeSlider.setLabels(labels);
+
+    timeSlider.on("time-extent-change", function (evt) {
+        var startValString = evt.startTime.getUTCFullYear();
+        var endValString = evt.endTime.getUTCFullYear();
+        dom.byId("daterange").innerHTML = "<i>" + startValString + " and " + endValString + "<\/i>";
+    });
+
+    console.log(featureLayer);
+    console.log(map.timeExtent)
+
+//    debugger;
+//    var timeDef = new TimeExtent();
+//    timeDef.startTime = new Date("01/01/2001");
+////    timeDef.endTime = new Date("01/03/2001");
+//    featureLayer.setTimeDefinition(timeDef);
+
+
+    });
+
+
+
+
+
+
+
+
+
+    </script>
+
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+
+    </style>
+
+<body>
+<div id="map">
+    <div id="bottomPanel">
+        <div id="timeInfo">
+            <div>Time Series <span id="daterange">1921 to 2009</span> (Completion date)</div>
+            <div id="timeSliderDiv"></div>
+        </div>
+    </div>
+
+</div>
+
+
+</body>
+
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Layer</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.13/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.13/esri/css/esri.css">
+    <style>
+        html, body, #mapDiv, .map.container {
+            padding:0;
+            margin:0;
+            height:100%;
+        }
+    </style>
+    <script src="http://js.arcgis.com/3.13/"></script>
+    <script>
+        var global;
+        var addLayer;
+        var clear;
+        var featureLayer;
+        require([
+            "esri/map", "esri/layers/FeatureLayer", "esri/InfoTemplate",
+            "esri/tasks/GeometryService",
+            "esri/layers/QueryDataSource", "esri/layers/LayerDataSource",
+            "esri/symbols/SimpleFillSymbol", "esri/symbols/SimpleMarkerSymbol", "esri/renderers/SimpleRenderer",
+            "esri/config","esri/SpatialReference", "esri/symbols/SimpleLineSymbol", "esri/Color", "esri/renderers/HeatmapRenderer",
+            "esri/Color", "dojo/domReady!"
+        ], function(
+                Map, FeatureLayer, InfoTemplate,
+                GeometryService,
+                QueryDataSource, LayerDataSource,
+                SimpleFillSymbol,SimpleMarkerSymbol, SimpleRenderer,
+                esriConfig, SpatialReference,SimpleLineSymbol, Color,HeatmapRenderer,
+                Color)
+        {
+            map = new Map("map", {
+                basemap: "gray",
+                center: [0,0],
+                zoom: 3
+            });
+
+            var simpleJson = {
+                "type": "simple",
+                "label": "",
+                "description": "",
+                "symbol": {
+                    "color": [255, 0, 0, 100],
+                    "size": 10,
+                    "angle": 0,
+                    "xoffset": 0,
+                    "yoffset": 0,
+                    "type": "esriSMS",
+                    "style": "esriSMSCircle",
+                    "outline": {
+                        "color": [0, 0, 0, 200],
+                        "width": .2,
+                        "type": "esriSLS",
+                        "style": "esriSLSDot"
+                    }
+                }
+            }
+            //               var renderer = new SimpleRenderer(
+            //                       new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_SQUARE, 10,
+            //                               new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+            //                                       new Color([255,0,0]), 1)));
+
+            var blurCtrl = document.getElementById("blurControl");
+            var maxCtrl = document.getElementById("maxControl");
+            var minCtrl = document.getElementById("minControl");
+            var valCtrl = document.getElementById("valueControl");
+
+            var datasource = new QueryDataSource();
+            datasource.workspaceId = "BiodWebbd";
+            datasource.geometryType = "points";
+            datasource.oidFields = ["OBJECTID"];
+            //datasource.query = "SELECT OBJECTID, Shape, MAX_POP300 from bioDWEB.BD.NATEARTH_10M_POPULATED_PLACES WHERE MAX_POP300 > 0";
+            //datasource.query = "Select TOP 1000 FC.OBJECTID, FC.Shape, TB.Population POP from bd.US_CENSUSTRACT_G0050_Points FC inner join(SELECT ctid ID,sum (population) Population FROM bd.tbl_AgeByGender where AgeGroupID in (11)  and CategoryID in (1,0)  group by ctid) TB on FC.ctid = TB.ID ORDER BY POP DESC"
+            //datasource.query = "SELECT OBJECTID, SHAPE, Population POP FROM bd.pointtest";
+            datasource.query = "Select TOP 5000 FC.OBJECTID, FC.Shape, TB.Population POP from bd.US_COUNTY_G0200_Points FC inner join (SELECT VW.county_FIPS FIPS, Sum(S.Population) Population from (select ctid, sum(Population) Population from bd.tbl_FBCensusTract where countryId in (121)  group by ctid) S inner join bd.US_CENSUSTRACT_G0050_Points VW on s.ctId = VW.ctId group by VW.county_FIPS) TB on FC.FIPS = TB.FIPS ORDER BY POP DESC";
+            datasource.spatialReference = new SpatialReference({ wkid: 102100 });
+            var layersource = new LayerDataSource();
+            layersource.dataSource = datasource;
+
+            featureLayer = new FeatureLayer("http://map1dev.ad.bluedot.global:6080/arcgis/rest//services/BiodGeoprocessingTest/TimeEnabledTest/MapServer/dynamicLayer",
+                    {
+                        mode: FeatureLayer.MODE_SNAPSHOT,
+                        outFields: ["*"],
+                        source: layersource
+                    });
+//            renderer = new HeatmapRenderer({
+//                //colors: ["rgba(0, 0, 255, 0)","rgb(0, 0, 255)","rgb(255, 0, 255)", "rgb(255, 0, 0)"],
+//                colorStops: [
+////                        { ratio: 0, color: "rgba(236,246,225, 0)" }, //OPTION 1
+////                        { ratio: 0.50, color: "rgb(234,223,96)" },
+////                        { ratio:.99, color: "rgb(215,53,53)"}],
+////                        { ratio:0, color: "rgba(249,223,35,.5)"}, //OPTION 2
+////                        { ratio:1, color: "rgba(121,17,124,1)"}],
+////                        { ratio:0, color: "rgba(176,206,255,0)"}, //OPTION 3
+////                        { ratio:.99, color: "rgb(0,73,255)"}],
+////                        { ratio: 0, color: "rgba(249,223,35, 0)" }, //OPTION 4
+////                        { ratio: 0.50, color: "rgb(121,183,81)" },
+////                        { ratio:.99, color: "rgb(55,48,142)"}]
+//                    {ratio: 0, color: "rgba(255,0,0,0)"},
+//                    {ratio: 1, color: "rgb(100,0,0)"}],
+//                blurRadius: blurCtrl.value,
+//                maxPixelIntensity: maxCtrl.value,
+//                minPixelIntensity: minCtrl.value,
+//                field: "POP"
+//            });
+            var renderer = new SimpleRenderer(simpleJson);
+            featureLayer.setRenderer(renderer);
+            map.addLayer(featureLayer);
+            calcBlurRadius = function() {
+                return ((map.width) / map.extent.getWidth()) * (25500)
+            }
+            calcMaxIntensity = function() {
+                return (calcBlurRadius() * 7555)
+                //return 8000
+            }
+            calcMinIntensity = function() {
+                return 0
+            }
+            map.on("extent-change", function() {
+                //alert('extent change')
+                radius = calcBlurRadius();
+                maxPixelIntensity = calcMaxIntensity();
+                minPixelIntensity = calcMinIntensity();
+                console.log("Blur Radius: " + radius);
+                console.log("Max Pixel Intensity: "  + maxPixelIntensity);
+                console.log("Min Pixel Intensity: " + minPixelIntensity);
+                renderer.blurRadius = radius;
+                renderer.maxPixelIntensity = maxPixelIntensity;
+                renderer.minPixelIntensity = minPixelIntensity;
+                var ratio = (calcBlurRadius()/100); //was at 175
+                //var ratio = map.getLevel() * .071;
+                if (ratio > 1) {
+                    ratio = 1
+                }
+                //if
+                console.log(ratio)
+                renderer.setColorStops([{ratio:0, color: "rgba(143, 86, 82, 0)"},
+                    {ratio:ratio, color: "rgb(100,0,0)"}]);
+                featureLayer.redraw();
+            })
+            var sliders = document.querySelectorAll(".blurInfo p~input[type=range]");
+            var addLiveValue = function (ctrl){
+                var val = ctrl.previousElementSibling.querySelector("span");
+                ctrl.addEventListener("input", function (evt){
+                    val.innerHTML = evt.target.value;
+                });
+            };
+            for (var i = 0; i < sliders.length; i++) {
+                addLiveValue(sliders.item(i));
+            }
+            blurCtrl.addEventListener("change", function (evt){
+                var r = +evt.target.value;
+                if (r !== renderer.blurRadius) {
+                    renderer.blurRadius = r;
+                    featureLayer.redraw();
+                }
+            });
+            maxCtrl.addEventListener("change", function (evt){
+                var r = +evt.target.value;
+                if (r !== renderer.maxPixelIntensity) {
+                    renderer.maxPixelIntensity = r;
+                    featureLayer.redraw();
+                }
+            });
+            minCtrl.addEventListener("change", function (evt){
+                var r = +evt.target.value;
+                if (r !== renderer.minPixelIntensity) {
+                    renderer.minPixelIntensity = r;
+                    featureLayer.redraw();
+                }
+            });
+            // --------------------------------------------------------------------
+            // When check / uncheck the control for the HeatmapRenderer field,
+            // we will leave the blurRadius and the minPixelIntensity values the
+            // same. However we will adjust the maxPixelIntensity value so it
+            // spreads the colors across the range of magnitude values. For your
+            // own dataset, you will need to experiment to find what looks good
+            // based upon the level of geography when you display the heatmap
+            // and the values in your dataset.
+            // --------------------------------------------------------------------
+            valCtrl.addEventListener("change", function (evt){
+                var chk = evt.target.checked;
+                if (!chk) {
+                    document.getElementById("maxValue").innerHTML = 21;
+                    maxCtrl.value = 21;
+                    renderer.maxPixelIntensity = 21;
+                }
+                else {
+                    document.getElementById("maxValue").innerHTML = 250;
+                    maxCtrl.value = 250;
+                    renderer.maxPixelIntensity = 250;
+                }
+                renderer.field = (chk) ? "Magnitude" : null;
+                featureLayer.redraw();
+            });
+        })();
+
+
+    </script>
+
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .blurInfo {
+            position: absolute;
+            top: 10px;
+            right: 5px;
+            font-size: 1.25em;
+            font-family: monospace;
+            color: #4C4C4C;
+            width: 240px;
+            background-color: #FFFFFF;
+            padding: 10px;
+            border: 2px solid #57585A;
+            border-radius: 20px;
+        }
+        .blurInfo p span {
+            background-color: #FFFFFF;
+            padding: 0 5px;
+            border-radius: 5px;
+        }
+        .blurInfo input[type=range] {
+            width: 100%;
+            display: block;
+        }
+    </style>
+
+<body>
+<div id="map"></div>
+<div class="blurInfo">
+    <p>
+        <label for="valueControl">Weight by Population</label>
+        <input id="valueControl" type="checkbox" checked>
+    </p>
+    <p>Blur Radius : <span id="blurValue">10</span></p>
+    <input id="blurControl" type="range" max=10000 min=0 value=10 step=1/>
+
+    <p>Max Value : <span id="maxValue">8000</span></p>
+    <input id="maxControl" type="range" max=8000 min=0 value=8000 step=1/>
+
+    <p>Min Value : <span id="minValue">0</span></p>
+    <input id="minControl" type="range" max=8000 min=0 value=0 step=1/>
+
+
+</div>
+
+</body>
+
+</html>
