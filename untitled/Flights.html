@@ -1,0 +1,129 @@
+<html>
+<head>
+    <title></title>
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+
+</head>
+<body>
+
+<h2>D3 Playing</h2>
+<div id="chart"></div>
+
+<script>
+
+
+    var data;
+    var len;
+
+    d3.csv("data.csv", function(d) {
+        return {
+            State: d.State, // convert "Year" column to Date
+            Population: +d.Population // convert "Length" column to number
+        };
+    }, function(error, rows) {
+        data = rows;
+        len = data.length;
+        resume()
+    });
+
+
+
+    function resume() {
+        console.log(data)
+        var cHeight = 300
+        var cWidth = 600
+
+        var scale = d3.scale.ordinal()
+                .domain(d3.range(0, data.length))
+                .rangeBands([0, cWidth-100])
+
+
+
+        d3.select('#chart')
+                .append('g')
+                .append('svg')
+
+                .style('background-color', 'lightgrey')
+                .attr('height', cHeight)
+                .attr('width', cWidth)
+                .append('g')
+                .selectAll('.barNodes')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('class','barNodes')
+                .style('fill', 'red')
+                .style('stroke', '#000')
+                .style('z-index', '999')
+
+                .attr('x', function(d,i) {
+                    return scale(i)+50
+                })
+                .attr('width',scale.rangeBand())
+
+                .attr('y', function(d,i) {
+                    return cHeight-50 - (d.Population *.02)
+                })
+                .attr('height',function(d,i) {
+                    return (d.Population *.02)
+                })
+
+
+        var arr = new Array(100)
+
+        var yScale = d3.scale.linear()
+                .domain([0, d3.max(data)])
+                .range([0, cHeight])
+
+        var xScale = d3.scale.ordinal()
+                .domain(d3.range(0, data.length))
+                .rangeBands([0, cWidth])
+
+        d3.select('svg')
+                .append('g')
+                .selectAll('.bgNodes')
+                .data(arr)
+                .enter()
+                .append('rect')
+
+                .attr('class','bgNodes')
+
+                .style({
+                    width:"50px",
+                    height:"50px",
+                    stroke:'white',
+                    "stroke-width": ".5px",
+                    fill: "none",
+                    opacity: ".5",
+                    "z-index": "5"
+                })
+
+
+                .attr('x', function(d,i) {
+                    return xScale(i)
+                })
+                .attr('y', function(d,i) {
+                    return xScale(i)
+                })
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+
+
+</html>

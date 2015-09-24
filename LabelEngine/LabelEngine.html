@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dynamic Layer</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.13/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.13/esri/css/esri.css">
+    <style>
+        html, body, #mapDiv, .map.container {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+        }
+    </style>
+    <script src="http://js.arcgis.com/3.13/"></script>
+    <script>
+        var map;
+
+        require([
+                    "esri/map",
+                    "esri/layers/FeatureLayer",
+                    "esri/layers/ArcGISDynamicMapServiceLayer",
+                    "esri/layers/ArcGISTiledMapServiceLayer",
+                    "esri/layers/DynamicLayerInfo",
+                    "esri/layers/QueryDataSource",
+                    "esri/layers/TableDataSource",
+                    "esri/layers/LayerDataSource",
+                    "esri/layers/LayerDrawingOptions",
+                    "esri/renderers/ClassBreaksRenderer",
+                    "esri/renderers/SimpleRenderer",
+                    "esri/symbols/SimpleFillSymbol",
+                    "esri/symbols/SimpleLineSymbol",
+                    "esri/layers/LabelClass",
+                    "esri/symbols/TextSymbol",
+                    "esri/symbols/Font", "esri/Color", "esri/layers/ImageParameters", "esri/InfoTemplate",
+                    "esri/tasks/QueryTask", "esri/tasks/query", "esri/tasks/IdentifyTask", "esri/tasks/IdentifyParameters", "esri/dijit/Popup",
+                    "esri/SpatialReference", "esri/urlUtils", "esri/layers/LabelLayer", "esri/layers/FeatureLayer",
+                    "dojo/dom",
+                    "dojo/dom-construct",
+                    "dojo/dom-style",
+                    "dojo/parser",
+                    "dojo/query",
+                    "dojo/_base/array",
+                    "dojo/_base/Color",
+                    "dojo/dnd/Source",
+                    "dojo/domReady!"],
+
+                function (Map, FeatureLayer, ArcGISDynamicMapServiceLayer, ArcGISTiledMapServiceLayer,
+                          DynamicLayerInfo, QueryDataSource, TableDataSource, LayerDataSource, LayerDrawingOptions,
+                          ClassBreaksRenderer, SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol, LabelClass, TextSymbol, Font,
+                          Color, ImageParameters, InfoTemplate, QueryTask, Query, IdentifyTask, IdentifyParameters, Popup,
+                          SpatialReference, urlUtils, LabelLayer, FeatureLayer, dom, domConstruct,
+                          domStyle, parser, query, arrayUtils, Color, Source, registry) //requires
+                {
+                    map = new Map("map", {
+                        basemap: "gray",
+                        center: [0, 0],
+                        zoom: 3
+                    });
+
+                    parser.parse();
+
+//            urlUtils.addProxyRule({
+//                urlPrefix: "map1dev.ad.bluedot.global:6080",
+//                proxyUrl: "http://localhost/ArcGIS/LabelEngine/webproxy/proxy.ashx"
+//            });
+                    // create a renderer for the states layer to override default symbology
+                    var statesColor = new Color("#FF0000");
+                    var statesOutlineColor = new Color("#FFFFFF");
+                    var statesLine = new SimpleLineSymbol("solid", statesOutlineColor, 3);
+                    var statesSymbol = new SimpleFillSymbol("solid", statesLine, statesColor);
+                    var statesRenderer = new SimpleRenderer(statesSymbol);
+
+                    var featureLayer = new FeatureLayer(
+                            "http://map1dev.ad.bluedot.global:6080/arcgis/rest/services/BiodGeoprocessingTest/DengueFeatureLayerService/MapServer/0", {
+                                id:"country",
+                                outFields: ["*"],
+                            });
+                    featureLayer.setRenderer(statesRenderer);
+                    map.addLayer(featureLayer);
+
+                    var statesLabel = new TextSymbol().setColor(statesOutlineColor);
+                    statesLabel.font.setSize("14pt");
+                    statesLabel.font.setFamily("arial");
+                    var statesLabelRenderer = new SimpleRenderer(statesLabel);
+                    var labels = new LabelLayer({ id: "labels" });
+                    // tell the label layer to label the states feature layer
+                    // using the field named "STATE_NAME"
+                    labels.addFeatureLayer(featureLayer, statesLabelRenderer, "{" + "ctryTeryID" + "}");
+                    map.addLayer(labels);
+
+                })();
+
+
+    </script>
+
+    <script>
+        debugger;
+        var LabelEngine = {
+            map: map
+        }
+
+
+
+    </script>
+
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+
+        }
+
+        .settings {
+            position: absolute;
+            top: 10px;
+            right: 5px;
+            font-size: 1.25em;
+            font-family: Helvetica Neue, Arial color : #4C4C4C;
+            width: 240px;
+            background-color: #FFFFFF;
+            padding: 10px;
+            border: 2px solid #57585A;
+            border-radius: 20px;
+        }
+
+        /*.blurInfo p span {*/
+        /*background-color: #FFFFFF;*/
+        /*padding: 0 5px;*/
+        /*border-radius: 5px;*/
+        /*}*/
+
+        /*.blurInfo input[type=range] {*/
+        /*width: 100%;*/
+        /*display: block;*/
+
+    </style>
+
+<body>
+<div id="map"></div>
+<div class="settings">
+    <h3>Settings</h3>
+
+
+</div>
+
+</body>
+
+</html>
